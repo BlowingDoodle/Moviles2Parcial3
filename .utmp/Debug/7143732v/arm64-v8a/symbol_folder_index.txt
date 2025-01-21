@@ -1,0 +1,1 @@
+C:\Doc_Sergio\Escuela\MOBILES\Uniat-Mobile\Library\Bee\Android\Prj\IL2CPP\Gradle\unityLibrary\build\intermediates\cxx\Debug\7143732v\obj\arm64-v8a
