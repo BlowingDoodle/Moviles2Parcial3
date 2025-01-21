@@ -96,21 +96,7 @@ public class AdManager : MonoBehaviour
         }
     }
 
-    public void ShowRewardedVideoForRevive()
-    {
-        ShowRewardedVideo(success =>
-        {
-            if (success)
-            {
-                Debug.Log("Jugador revivido tras ver el anuncio.");
-                GameManager.Instance.RevivePlayer();
-            }
-            else
-            {
-                Debug.Log("No se pudo mostrar el anuncio.");
-            }
-        });
-    }
+    
 
     void OnApplicationPause(bool isPaused)
     {
