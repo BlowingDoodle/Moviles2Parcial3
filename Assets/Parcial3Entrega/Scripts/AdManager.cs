@@ -1,12 +1,11 @@
 using System;
 using UnityEngine;
-using Unity.VisualScripting;
 
 public class AdManager : MonoBehaviour
 {
     public static AdManager Instance { get; private set; }
 
-    private string _gameid = "203326405";
+    private string _gameId = "203326405"; // Reemplaza con tu Game ID real
     private Action<bool> _callback;
     private static bool _isInitialized = false;
 
@@ -21,6 +20,7 @@ public class AdManager : MonoBehaviour
             Destroy(gameObject);
         }
     }
+
     void Start()
     {
         if (_isInitialized)
@@ -28,84 +28,52 @@ public class AdManager : MonoBehaviour
             Destroy(gameObject);
             return;
         }
-        IronSource.Agent.init(_gameid);
+
+        IronSource.Agent.init(_gameId);
         IronSource.Agent.shouldTrackNetworkState(true);
         DontDestroyOnLoad(gameObject);
         _isInitialized = true;
 
-#if DEVELOPMENT_BUILD 
+#if DEVELOPMENT_BUILD
         IronSource.Agent.validateIntegration();
 #endif
-        IronSourceRewardedVideoEvents.onAdOpenedEvent += RewardedVideoOnAdOpenedEvent;
-        IronSourceRewardedVideoEvents.onAdClosedEvent += RewardedVideoOnAdClosedEvent;
-        IronSourceRewardedVideoEvents.onAdAvailableEvent += RewardedVideoOnAdAvailable;
-        IronSourceRewardedVideoEvents.onAdUnavailableEvent += RewardedVideoOnAdUnavailable;
-        IronSourceRewardedVideoEvents.onAdShowFailedEvent += RewardedVideoOnAdShowFailedEvent;
+
+        // Suscribirse a eventos de IronSource
         IronSourceRewardedVideoEvents.onAdRewardedEvent += RewardedVideoOnAdRewardedEvent;
-        IronSourceRewardedVideoEvents.onAdClickedEvent += RewardedVideoOnAdClickedEvent;
-
-
+        IronSourceRewardedVideoEvents.onAdShowFailedEvent += RewardedVideoOnAdShowFailedEvent;
     }
 
-    void RewardedVideoOnAdAvailable(IronSourceAdInfo adInfo)
+    private void RewardedVideoOnAdRewardedEvent(IronSourcePlacement placement, IronSourceAdInfo adInfo)
     {
-    }
-
-    void RewardedVideoOnAdUnavailable()
-    {
-    }
-
-    void RewardedVideoOnAdOpenedEvent(IronSourceAdInfo adInfo)
-    {
-
-    }
-
-    void RewardedVideoOnAdClosedEvent(IronSourceAdInfo adInfo)
-    {
-    }
-    void RewardedVideoOnAdRewardedEvent(IronSourcePlacement placement, IronSourceAdInfo adInfo)
-    {
-        _callback?.Invoke(true);
+        _callback?.Invoke(true); // Notificar que el anuncio se completó
         _callback = null;
     }
 
-    void RewardedVideoOnAdShowFailedEvent(IronSourceError error, IronSourceAdInfo adInfo)
+    private void RewardedVideoOnAdShowFailedEvent(IronSourceError error, IronSourceAdInfo adInfo)
     {
-        _callback?.Invoke(false);
+        _callback?.Invoke(false); // Notificar que el anuncio falló
         _callback = null;
-    }
-
-    void RewardedVideoOnAdClickedEvent(IronSourcePlacement placement, IronSourceAdInfo adInfo)
-    {
     }
 
     public void ShowRewardedVideo(Action<bool> callback)
     {
         _callback = callback;
+
         if (IronSource.Agent.isRewardedVideoAvailable())
         {
-            Debug.Log("showing ad");
+            Debug.Log("Showing ad...");
             IronSource.Agent.showRewardedVideo();
         }
         else
         {
-            Debug.Log("ad not available");
+            Debug.Log("Ad not available.");
             _callback = null;
             callback(false);
-
         }
     }
 
-    
-
-    void OnApplicationPause(bool isPaused)
+    private void OnApplicationPause(bool isPaused)
     {
         IronSource.Agent.onApplicationPause(isPaused);
     }
-
-
-
-
 }
-
-

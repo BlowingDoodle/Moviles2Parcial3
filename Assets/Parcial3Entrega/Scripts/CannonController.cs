@@ -15,6 +15,12 @@ public class CannonController : MonoBehaviour
 
     void Update()
     {
+        // Verificar si el tiempo está pausado (evitar input cuando el tiempo está detenido)
+        if (Time.timeScale == 0)
+        {
+            return;
+        }
+
         // Manejar la carga de potencia
         if (Input.GetMouseButtonDown(0))
         {
