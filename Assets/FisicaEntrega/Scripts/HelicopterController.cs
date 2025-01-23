@@ -15,7 +15,7 @@ public class HelicopterController : MonoBehaviour
     [SerializeField] private float _rotorSpeed = 3000f; // Velocidad de giro (ajusta libremente)
     [SerializeField] private float _returnSpeed = 5f;
 
-    // Estas variables las moveremos directamente con teclas
+    // Variables controladas por el input
     private float _throttle;
     private float _roll;
     private float _pitch;
@@ -24,7 +24,12 @@ public class HelicopterController : MonoBehaviour
     private void Awake()
     {
         _rigidbody = GetComponent<Rigidbody>();
-        _rigidbody.useGravity = true;  // Asegurarte de que el Rigidbody tenga la gravedad activa
+        // Asegurarnos de usar gravedad, pero la compensaremos manualmente
+        _rigidbody.useGravity = true;
+        
+        // Opcional: puedes agregar algo de Drag para estabilidad:
+        //_rigidbody.drag = 0.5f;
+        //_rigidbody.angularDrag = 0.8f;
     }
 
     private void Update()
@@ -41,15 +46,11 @@ public class HelicopterController : MonoBehaviour
     private void HandleInputs()
     {
         // Entradas de ejes
-        _roll  = Input.GetAxis("Roll");   // A/D (o joystick lateral)
-        _pitch = Input.GetAxis("Pitch");  // W/S (o joystick vertical)
-        _yaw   = Input.GetAxis("Yaw");    // Q/E (o joystick de giro)
+        _roll  = Input.GetAxis("Roll");   // A/D  (o joystick lateral)
+        _pitch = Input.GetAxis("Pitch");  // W/S  (o joystick vertical)
+        _yaw   = Input.GetAxis("Yaw");    // Q/E  (o joystick de giro)
 
-        // En este método simplificamos el throttle:
-        // - Espacio => throttle positivo (subir).
-        // - Shift => throttle negativo (bajar).
-        // - Nada => throttle = 0.
-
+        // Simplificamos el throttle con Espacio y Shift
         if (Input.GetKey(KeyCode.Space))
         {
             _throttle = 1f;  // 100% ascenso
@@ -66,17 +67,16 @@ public class HelicopterController : MonoBehaviour
 
     private void HandleRotor()
     {
-        // Si no se ha asignado el rotor, salimos para evitar errores
         if (_rotor == null) return;
 
-        // Si mantienes Espacio, gira el rotor
+        // Si mantienes Espacio, hacemos girar el rotor
         if (Input.GetKey(KeyCode.Space))
         {
             _rotor.Rotate(Vector3.up, _rotorSpeed * Time.deltaTime, Space.Self);
         }
         else
         {
-            // Deja de rotar y vuelve gradualmente a 0
+            // Al soltar, vuelve gradualmente a 0
             _rotor.localRotation = Quaternion.Lerp(
                 _rotor.localRotation,
                 Quaternion.identity,
@@ -87,17 +87,28 @@ public class HelicopterController : MonoBehaviour
 
     private void ApplyPhysics()
     {
-        // ForceMode.Force aplica una fuerza continua dependiente de la masa y el deltaTime
-        // Calculamos el "efecto neto" del throttle menos la gravedad (si throttle es 1, sumará throttlePower, si es -1, restará)
-        float effectiveThrottle = (_throttle * _throttlePower) - _gravityCompensation;
+        // 1) Aplicar fuerza ascendente (local) según el throttle 
+        //    (transform.up cambiará al inclinar el helicóptero)
+        float upwardForce = _throttle * _throttlePower;
+        
+        // 2) Fuerza de sustentación local
+        Vector3 lift = transform.up * upwardForce;
+        
+        // 3) Compensación de la gravedad en el eje global (para que siempre "jale" hacia abajo)
+        Vector3 gravityComp = Vector3.down * _gravityCompensation;
 
-        // Aplicamos la fuerza "arriba/abajo" en el eje del helicóptero
-        Vector3 verticalForce = transform.up * effectiveThrottle;
-        _rigidbody.AddForce(verticalForce, ForceMode.Force);
+        // 4) Suma de fuerzas: sustentación local - gravedad global
+        Vector3 totalForce = lift + gravityComp;
 
-        // Torques para roll, pitch y yaw
+        // Aplicamos la fuerza resultante
+        _rigidbody.AddForce(totalForce, ForceMode.Force);
+
+        // Aplicar torques de roll, pitch y yaw
+        // - pitch controla la inclinación adelante/atrás
+        // - roll controla la inclinación lateral
+        // - yaw controla la rotación sobre el eje vertical
         _rigidbody.AddTorque(transform.right   * _pitch * _responsiveness, ForceMode.Force);
         _rigidbody.AddTorque(transform.forward * -_roll * _responsiveness, ForceMode.Force);
-        _rigidbody.AddTorque(transform.up      * _yaw * _yawPower,        ForceMode.Force);
+        _rigidbody.AddTorque(transform.up      * _yaw   * _yawPower,       ForceMode.Force);
     }
 }
